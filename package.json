@@ -1,0 +1,26 @@
+{
+  "name": "index-sql",
+  "version": "1.0.0",
+  "description": "fork from https://github.com/dandimrod/IndexSQL and add package.json",
+  "main": "IndexSQL.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joseph-bing-han/IndexSQL.git"
+  },
+  "keywords": [
+    "IndexedDB",
+    "SQL"
+  ],
+  "author": "dandimrod",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/joseph-bing-han/IndexSQL/issues"
+  },
+  "homepage": "https://github.com/joseph-bing-han/IndexSQL#readme"
+}
