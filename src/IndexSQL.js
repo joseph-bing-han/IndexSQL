@@ -25,57 +25,56 @@
  * @constructor
  * @param  {String} dbName - The name of the database you want to open.
  */
-class IndexSQL {
+export default class IndexSQL {
     constructor(dbName) {
         let db = {};
         let requestDB = indexedDB.open("IndexSQL", 1);
-        requestDB.onerror = function (event) {
+        requestDB.onerror = function(event) {
             log.warn("Database error: " + event.target.errorCode);
         };
-        requestDB.onupgradeneeded = function (event) {
+        requestDB.onupgradeneeded = function(event) {
             db = event.target.result;
             let store = db.createObjectStore("databases", { keypath: "name" });
         };
-        db.server = function () {
+        db.server = function() {
             let data = {};
             var DBUtils = {
                 name: "",
                 loaded: false,
                 transaction: false,
-                save: function () {
+                save: function() {
                     let requestDB = indexedDB.open("IndexSQL", 1);
-                    requestDB.onerror = function (event) {
+                    requestDB.onerror = function(event) {
                         log.warn("Database error: " + event.target.errorCode);
                     };
-                    requestDB.onsuccess = function (event) {
+                    requestDB.onsuccess = function(event) {
                         let db = event.target.result;
                         let transaction = db.transaction(["databases"], "readwrite");
-                        transaction.onerror = function (event) {
+                        transaction.onerror = function(event) {
                             console.warn("Database error: " + event.target.errorCode);
                         };
-                        transaction.oncomplete = function (event) {
+                        transaction.oncomplete = function(event) {
                             //SAVED
                         };
                         var objectStore = transaction.objectStore("databases");
                         var request = objectStore.put({ data: JSON.stringify(data) }, DBUtils.name);
                     };
                 },
-                load: function () {
+                load: function() {
                     let requestDB = indexedDB.open("IndexSQL", 1);
-                    requestDB.onerror = function (event) {
+                    requestDB.onerror = function(event) {
                         log.warn("Database error: " + event.target.errorCode);
                     };
-                    requestDB.onsuccess = function (event) {
+                    requestDB.onsuccess = function(event) {
                         let db = event.target.result;
                         let transaction = db.transaction(["databases"], "readonly");
-                        transaction.onerror = function (event) {
+                        transaction.onerror = function(event) {
                             console.warn("Database error: " + event.target.errorCode);
                         };
-                        transaction.oncomplete = function (event) {
+                        transaction.oncomplete = function(event) {
                             if (request.result) {
                                 data = JSON.parse(request.result.data);
-                            }
-                            else {
+                            } else {
                                 DBUtils.save();
                             }
                             DBUtils.loaded = true;
@@ -84,18 +83,18 @@ class IndexSQL {
                         var request = objectStore.get(DBUtils.name);
                     };
                 },
-                drop: function () {
+                drop: function() {
                     let requestDB = indexedDB.open("IndexSQL", 1);
-                    requestDB.onerror = function (event) {
+                    requestDB.onerror = function(event) {
                         log.warn("Database error: " + event.target.errorCode);
                     };
-                    requestDB.onsuccess = function (event) {
+                    requestDB.onsuccess = function(event) {
                         let db = event.target.result;
                         let transaction = db.transaction(["databases"], "readwrite");
-                        transaction.onerror = function (event) {
+                        transaction.onerror = function(event) {
                             console.warn("Database error: " + event.target.errorCode);
                         };
-                        transaction.oncomplete = function (event) {
+                        transaction.oncomplete = function(event) {
                             console.log("Database " + DBUtils.name + " has been dropped");
                             postMessage({ end: true });
                         };
@@ -105,21 +104,20 @@ class IndexSQL {
                 }
             };
             var SQLParser = {
-                parse: function (querys, id) {
+                parse: function(querys, id) {
                     //Delete all comments
-                    querys=querys.replace(/(?:\/\*(?:.|\n)*?\*\/|--.*)/g,"");
+                    querys = querys.replace(/(?:\/\*(?:.|\n)*?\*\/|--.*)/g, "");
                     if (DBUtils.loaded) {
                         postMessage({ id, response: SQLParser.parseAll(querys) });
-                    }
-                    else {
-                        setTimeout(function (querys, id) {
-                            return function () {
+                    } else {
+                        setTimeout(function(querys, id) {
+                            return function() {
                                 SQLParser.parse(querys, id);
                             };
-                        } (querys, id), 500);
+                        }(querys, id), 500);
                     }
                 },
-                parseAll: function (querys) {
+                parseAll: function(querys) {
                     querys = querys.split(";");
                     let response = [];
                     for (let index = 0; index < querys.length - 1; index++) {
@@ -127,19 +125,18 @@ class IndexSQL {
                         response[index] = this.parser(query);
                         if (response[index].result) {
                             if (response[index].order) {
-                                response[index].result = tables.transform(response[index].result, response[index].distinct,response[index].order);
+                                response[index].result = tables.transform(response[index].result, response[index].distinct, response[index].order);
                                 delete response[index].order;
                                 delete response[index].distinct;
-                            }
-                            else {
+                            } else {
                                 response[index].result = tables.transform(response[index].result, response[index].distinct);
                                 delete response[index].distinct;
                             }
                         }
                         if (DBUtils.transaction) {
                             if (response[index].error) {
-                                data={};
-                                DBUtils.loaded=false;
+                                data = {};
+                                DBUtils.loaded = false;
                                 DBUtils.load();
                                 response[index].error = response[index].error + ". Transaction cancelled";
                                 break;
@@ -148,7 +145,7 @@ class IndexSQL {
                     }
                     return response;
                 },
-                parser: function (query) {
+                parser: function(query) {
                     query = query.replace(/(\r\n|\n|\r)/gm, " ").trim();
                     let operation = query.split(" ")[0].toUpperCase();
                     switch (operation) {
@@ -176,7 +173,7 @@ class IndexSQL {
                             return { error: "Not supported operation" };
                     }
                 },
-                select: function (query) {
+                select: function(query) {
                     function getFrom(fromStatement) {
                         let keywords = ["where", "order"];
                         let fromMatches = { from: "", where: "", order: "" };
@@ -186,8 +183,7 @@ class IndexSQL {
                             const element = dividedFrom[index];
                             if (keywords.includes(element.toLowerCase())) {
                                 lastMatch = element.toLowerCase();
-                            }
-                            else {
+                            } else {
                                 fromMatches[lastMatch] = fromMatches[lastMatch] + " " + element;
                             }
                         }
@@ -197,15 +193,15 @@ class IndexSQL {
                         fromMatches.order = fromMatches.order ? fromMatches.order.substring(3) : undefined;
                         return fromMatches;
                     }
+
                     function getColumns(matches, table) {
                         let columns;
                         if (matches.columns.trim() === "*") {
                             columns = [];
-                            Object.keys(table).forEach(function (element) {
+                            Object.keys(table).forEach(function(element) {
                                 columns.push(element.split(";")[0]);
                             });
-                        }
-                        else {
+                        } else {
                             columns = matches.columns.split(",");
                             for (let index = 0; index < columns.length; index++) {
                                 columns[index] = columns[index].trim();
@@ -221,8 +217,7 @@ class IndexSQL {
                                     if (!tables.find(foreingTable, element.split(".")[1])) {
                                         return { error: "The column " + element.split(".")[1] + " does not belong to the table " + element.split(".")[0] };
                                     }
-                                }
-                                else {
+                                } else {
                                     if (!tables.find(table, element)) {
                                         return { error: "The column " + element + " does not belong to the table " + matches.from };
                                     }
@@ -231,6 +226,7 @@ class IndexSQL {
                         }
                         return columns;
                     }
+
                     function getOrder(matches, table) {
                         let result = [];
                         let orders = matches.order.split(",");
@@ -274,9 +270,9 @@ class IndexSQL {
                             return where;
                         }
                     }
-                    let distinct=false;
-                    if(matches.distinct){
-                        distinct=true;
+                    let distinct = false;
+                    if (matches.distinct) {
+                        distinct = true;
                     }
                     let result = {};
                     //This clones the table into a new table
@@ -292,8 +288,7 @@ class IndexSQL {
                                             }
                                         }
                                     }
-                                }
-                                catch (error) {
+                                } catch (error) {
                                     return { error: "Incorrect where statement" };
                                 }
                             }
@@ -312,13 +307,12 @@ class IndexSQL {
                         if (order.error) {
                             return order;
                         }
-                        return { result: result, distinct:distinct, order: order };
-                    }
-                    else {
-                        return { result: result, distinct:distinct };
+                        return { result: result, distinct: distinct, order: order };
+                    } else {
+                        return { result: result, distinct: distinct };
                     }
                 },
-                insert: function (query) {
+                insert: function(query) {
                     let insertRegex = /^INSERT\s*INTO\s*(?<tableName>\w*)\s*(?:\((?<columns>.*)\))?\s*VALUES\s*\((?<values>.*)\)\s*$/gmi;
                     let matches = insertRegex.exec(query);
                     if (matches === null) {
@@ -335,8 +329,7 @@ class IndexSQL {
                         columns.forEach(element => {
                             columnOrder.push(element.trim());
                         });
-                    }
-                    else {
+                    } else {
                         for (const key in table) {
                             if (table.hasOwnProperty(key)) {
                                 columnOrder[key.split(";")[1]] = key.split(";")[0];
@@ -356,7 +349,7 @@ class IndexSQL {
                     }
                     return result;
                 },
-                update: function (query) {
+                update: function(query) {
                     function getSet(setStatement) {
                         let keywords = ["where"];
                         let setMatches = { set: "", where: "" };
@@ -366,8 +359,7 @@ class IndexSQL {
                             const element = dividedSet[index];
                             if (keywords.includes(element.toLowerCase())) {
                                 lastMatch = element.toLowerCase();
-                            }
-                            else {
+                            } else {
                                 setMatches[lastMatch] = setMatches[lastMatch] + " " + element;
                             }
                         }
@@ -375,6 +367,7 @@ class IndexSQL {
                         setMatches.where = setMatches.where !== "" ? setMatches.where.trim() : undefined;
                         return setMatches;
                     }
+
                     function getValues(matches, table) {
                         let values = matches.set.split(",");
                         let result = {};
@@ -432,29 +425,25 @@ class IndexSQL {
                                                 columns.push(column.split(";")[0]);
                                                 if (columnsAffected.includes(column)) {
                                                     insertValues.push(values[column]);
-                                                }
-                                                else {
+                                                } else {
                                                     if (typeof element === "string") {
                                                         insertValues.push("'" + element + "'");
-                                                    }
-                                                    else {
+                                                    } else {
                                                         insertValues.push(element);
                                                     }
                                                 }
                                             }
                                         }
-                                        let response = tables.insert(matches.tableName,table,insertValues.join().split(","),columns,key);
+                                        let response = tables.insert(matches.tableName, table, insertValues.join().split(","), columns, key);
                                         if (response.error) {
                                             error = response;
                                             break;
                                         }
                                     }
-                                }
-                                catch (error) {
+                                } catch (error) {
                                     return { error: "Incorrect where statement" };
                                 }
-                            }
-                            else {
+                            } else {
                                 indexExecuted++;
                                 let columns = [];
                                 let insertValues = [];
@@ -464,18 +453,16 @@ class IndexSQL {
                                         columns.push(column.split(";")[0]);
                                         if (columnsAffected.includes(column)) {
                                             insertValues.push(values[column]);
-                                        }
-                                        else {
+                                        } else {
                                             if (typeof element === "string") {
                                                 insertValues.push("'" + element + "'");
-                                            }
-                                            else {
+                                            } else {
                                                 insertValues.push(element);
                                             }
                                         }
                                     }
                                 }
-                                let response = tables.insert(matches.tableName,table,insertValues.join().split(","),columns,key);
+                                let response = tables.insert(matches.tableName, table, insertValues.join().split(","), columns, key);
                                 if (response.error) {
                                     error = response;
                                     break;
@@ -485,12 +472,11 @@ class IndexSQL {
                     }
                     if (error) {
                         return error;
-                    }
-                    else {
+                    } else {
                         return { message: "Updated " + indexExecuted + " rows" };
                     }
                 },
-                delete: function (query) {
+                delete: function(query) {
                     function getFrom(fromStatement) {
                         let keywords = ["where"];
                         let fromMatches = { from: "", where: "", order: "" };
@@ -500,8 +486,7 @@ class IndexSQL {
                             const element = dividedFrom[index];
                             if (keywords.includes(element.toLowerCase())) {
                                 lastMatch = element.toLowerCase();
-                            }
-                            else {
+                            } else {
                                 fromMatches[lastMatch] = fromMatches[lastMatch] + " " + element;
                             }
                         }
@@ -543,12 +528,10 @@ class IndexSQL {
                                             }
                                         }
                                     }
-                                }
-                                catch (error) {
+                                } catch (error) {
                                     return { error: "Incorrect where statement" };
                                 }
-                            }
-                            else {
+                            } else {
                                 indexExecuted++;
                                 for (const column in table) {
                                     if (table.hasOwnProperty(column)) {
@@ -563,7 +546,7 @@ class IndexSQL {
                     }
                     return { message: "Deleted " + indexExecuted + " rows" };
                 },
-                create: function (query) {
+                create: function(query) {
                     function getParameters(parameters) {
                         //DELETE PARENTHESIS
                         parameters = parameters.slice(1, -1);
@@ -577,20 +560,18 @@ class IndexSQL {
                                 if (parameterString.toUpperCase().includes("PRIMARY")) {
                                     let primaryRegex = /^PRIMARY\s*KEY\s*\((?<varName>.*)\)$/gmi;
                                     let key = primaryRegex.exec(parameterString).groups["varName"].trim();
-                                    if (result.parameters.find(function (a) { return a.name === key /**&&  a.datatype === "NUMBER"*/ ; })) {
+                                    if (result.parameters.find(function(a) { return a.name === key /**&&  a.datatype === "NUMBER"*/ ; })) {
                                         result.keys.primary = key;
-                                    }
-                                    else {
+                                    } else {
                                         return { error: "PRIMARY KEY does not exist" };
                                     }
-                                }
-                                else {
+                                } else {
                                     let foreingRegex = /^^FOREIGN\s*KEY\s*\((?<varName>.*)\)\s*REFERENCES\s*(?<referTable>.*)\((?<referName>.*)\)$/gmi;
                                     let groups = foreingRegex.exec(parameterString).groups;
-                                    groups.varName=groups.varName.trim();
-                                    groups.referTable=groups.referTable.trim();
-                                    groups.referName=groups.referName.trim();
-                                    if (!result.parameters.find(function (a) { return a.name === groups["varName"] /**&& a.datatype === "NUMBER"*/; })) {
+                                    groups.varName = groups.varName.trim();
+                                    groups.referTable = groups.referTable.trim();
+                                    groups.referName = groups.referName.trim();
+                                    if (!result.parameters.find(function(a) { return a.name === groups["varName"] /**&& a.datatype === "NUMBER"*/ ; })) {
                                         return { error: "FOREIGN KEY does not exist" };
                                     }
                                     if (!tables.find(tables.find(data, groups["referTable"]), groups["referName"])) {
@@ -598,8 +579,7 @@ class IndexSQL {
                                     }
                                     result.keys.foreign.push(groups.varName + ":" + groups.referTable + "(" + groups.referName + ")");
                                 }
-                            }
-                            else {
+                            } else {
                                 let parameterBreak = parameterString.split(" ");
                                 let parameter = {
                                     name: parameterBreak[0]
@@ -607,8 +587,7 @@ class IndexSQL {
                                 let datatype = transformDatatypes(parameterBreak[1].toUpperCase());
                                 if (datatypes.includes(datatype)) {
                                     parameter.datatype = datatype;
-                                }
-                                else {
+                                } else {
                                     return { error: "Parameter " + parameterBreak[0] + " has a non valid datatype" };
                                 }
                                 for (let index = 2; index < parameterBreak.length; index++) {
@@ -634,8 +613,7 @@ class IndexSQL {
                                                     const element = parameterBreak[index2];
                                                     if (inlineConstraints.includes(element.toUpperCase())) {
                                                         break;
-                                                    }
-                                                    else {
+                                                    } else {
                                                         defaultCase.push(element);
                                                     }
                                                 }
@@ -647,8 +625,7 @@ class IndexSQL {
                                                     const element = parameterBreak[index2];
                                                     if (inlineConstraints.includes(element.toUpperCase())) {
                                                         break;
-                                                    }
-                                                    else {
+                                                    } else {
                                                         checkCase.push(element);
                                                     }
                                                 }
@@ -664,6 +641,7 @@ class IndexSQL {
                         }
                         return result;
                     }
+
                     function transformDatatypes(datatype) {
                         //STRING
                         if (datatype.includes("CHAR")) {
@@ -720,15 +698,13 @@ class IndexSQL {
                             return table;
                         }
                         data[matches.tableName + ";" + parameters.keys.primary + ";" + parameters.keys.foreign.join(",")] = table;
-                    }
-                    else {
-                    }
+                    } else {}
                     if (!DBUtils.transaction) {
                         DBUtils.save();
                     }
                     return { message: "Table created" };
                 },
-                drop: function (query) {
+                drop: function(query) {
                     let dropRegex = /^DROP\s*TABLE\s*(?<tableName>\w*)\s*$/gmi;
                     let matches = dropRegex.exec(query);
                     if (matches === null) {
@@ -744,7 +720,7 @@ class IndexSQL {
                     }
                     return { message: "Table dropped" };
                 },
-                trucate: function (query) {
+                trucate: function(query) {
                     let truncateRegex = /^TRUNCATE\s*TABLE\s*(?<tableName>\w*)\s*$/gmi;
                     let matches = truncateRegex.exec(query);
                     if (matches === null) {
@@ -764,30 +740,28 @@ class IndexSQL {
                     }
                     return { message: "Table truncated" };
                 },
-                start: function (query) {
+                start: function(query) {
                     let startRegex = /^START\s*TRANSACTION\s*$/gmi;
                     let matches = startRegex.compile(query);
                     if (matches) {
                         DBUtils.transaction = true;
                         return { message: "Transaction starts" };
-                    }
-                    else {
+                    } else {
                         return { error: "Not supported operation" };
                     }
                 },
-                end: function (query) {
+                end: function(query) {
                     let endRegex = /^END\s*TRANSACTION\s*$/gmi;
                     let matches = endRegex.compile(query);
                     if (matches) {
                         DBUtils.transaction = false;
                         DBUtils.save();
                         return { message: "Transaction ends" };
-                    }
-                    else {
+                    } else {
                         return { error: "Not supported operation" };
                     }
                 },
-                tables: function (query) {
+                tables: function(query) {
                     let tablesRegex = /^TABLES\s*$/gmi;
                     let matches = tablesRegex.compile(query);
                     if (matches) {
@@ -798,12 +772,12 @@ class IndexSQL {
                             }
                         }
                         return { result: { "tables;0;": tables } };
-                    }
-                    else {
+                    } else {
                         return { error: "Not supported operation" };
                     }
                 }
             };
+
             function Table(variables) {
                 let table = {};
                 for (let index = 0; index < variables.length; index++) {
@@ -811,19 +785,17 @@ class IndexSQL {
                     if (!tables.find(table, element.name)) {
                         if (element.constraints) {
                             table[element.name + ";" + index + ";" + element.datatype + ";" + element.constraints] = {};
-                        }
-                        else {
+                        } else {
                             table[element.name + ";" + index + ";" + element.datatype] = {};
                         }
-                    }
-                    else {
+                    } else {
                         return { error: "Variable already exists" };
                     }
                 }
                 return table;
             }
             var tables = {
-                find: function (container, search) {
+                find: function(container, search) {
                     for (const key in container) {
                         if (container.hasOwnProperty(key)) {
                             const element = container[key];
@@ -834,7 +806,7 @@ class IndexSQL {
                     }
                     return undefined;
                 },
-                finder: function (container, search) {
+                finder: function(container, search) {
                     for (const key in container) {
                         if (container.hasOwnProperty(key)) {
                             const element = container[key];
@@ -845,7 +817,7 @@ class IndexSQL {
                     }
                     return undefined;
                 },
-                findColumn: function (table, column) {
+                findColumn: function(table, column) {
                     for (const key in table) {
                         if (table.hasOwnProperty(key)) {
                             const element = table[key];
@@ -856,7 +828,7 @@ class IndexSQL {
                     }
                     return undefined;
                 },
-                insert: function (tableName, table, values, order, key) {
+                insert: function(tableName, table, values, order, key) {
                     let tableData = tables.finder(data, tableName);
                     let insertData = {};
                     // This generates the data to insert and applies the constraits
@@ -871,8 +843,7 @@ class IndexSQL {
                             if (index !== -1) {
                                 //the insert contains the column
                                 value = this.checkDatatype(datatype, values[index]);
-                            }
-                            else {
+                            } else {
                                 //the insert doesn't contain the column
                                 if (constraints.includes("DEFAULT")) {
                                     let defaultRegex = /DEFAULT\s*(?<defaultValue>.*),/gmi;
@@ -882,13 +853,13 @@ class IndexSQL {
                                     value = Object.keys(column).length;
                                 }
                             }
-                            if(value){
-                                if(value!==null){
+                            if (value) {
+                                if (value !== null) {
                                     if (value.error) {
                                         return value;
                                     }
                                 }
-                            } 
+                            }
                             if (constraints.includes("NOT_NULL")) {
                                 if (value === null) {
                                     return { error: "Value of column " + columnName + " cannot be null" };
@@ -904,8 +875,7 @@ class IndexSQL {
                                     }
                                 }
                             }
-                            if (constraints.includes("CHECK")) {
-                            }
+                            if (constraints.includes("CHECK")) {}
                             insertData[key] = value;
                         }
                     }
@@ -937,11 +907,10 @@ class IndexSQL {
                         if (primaryKey === null) {
                             return { error: "The primary key cannot be null" };
                         }
-                    }
-                    else {
-                        if(key){
-                            primaryKey=key;
-                        }else{
+                    } else {
+                        if (key) {
+                            primaryKey = key;
+                        } else {
                             primaryKey = Object.keys(table[Object.keys(table)[0]]).length;
                         }
                     }
@@ -953,8 +922,8 @@ class IndexSQL {
                     }
                     return { message: "Values inserted succesfully" };
                 },
-                checkDatatype: function (datatype, value) {
-                    if(value.toUpperCase().includes("NULL")){
+                checkDatatype: function(datatype, value) {
+                    if (value.toUpperCase().includes("NULL")) {
                         return null;
                     }
                     switch (datatype) {
@@ -965,20 +934,18 @@ class IndexSQL {
                                 return { error: "Value " + value + " is supposed to be a string" };
                             }
                             match = match.groups;
-                            if (match.string1||match.string1==="") {
-                                if(match.string1===""){
+                            if (match.string1 || match.string1 === "") {
+                                if (match.string1 === "") {
                                     return "";
                                 }
                                 return match.string1;
-                            }
-                            else {
-                                if (match.string2||match.string2==="") {
-                                    if(match.string2===""){
+                            } else {
+                                if (match.string2 || match.string2 === "") {
+                                    if (match.string2 === "") {
                                         return "";
                                     }
                                     return match.string2;
-                                }
-                                else {
+                                } else {
                                     return { error: "Value " + value + " is supposed to be a string" };
                                 }
                             }
@@ -986,8 +953,7 @@ class IndexSQL {
                             let number = Number(value);
                             if (isNaN(number)) {
                                 return { error: "Value " + value + " is supposed to be a number" };
-                            }
-                            else {
+                            } else {
                                 return number;
                             }
                         case "BOOLEAN":
@@ -1002,7 +968,7 @@ class IndexSQL {
                             return { error: "Not supported datatype" };
                     }
                 },
-                transform: function (table, distinct, order) {
+                transform: function(table, distinct, order) {
                     let result = { header: [], values: [] };
                     let keys = Object.keys(table);
                     for (const key in table) {
@@ -1017,19 +983,19 @@ class IndexSQL {
                                 const column = keys[index];
                                 values.push(table[column][key]);
                             }
-                            if(distinct){
-                                let exist=result.values.find(function(element){
-                                    return JSON.stringify(element)===JSON.stringify(values);
+                            if (distinct) {
+                                let exist = result.values.find(function(element) {
+                                    return JSON.stringify(element) === JSON.stringify(values);
                                 })
-                                if(exist){
-                                   continue;
+                                if (exist) {
+                                    continue;
                                 }
-                            } 
+                            }
                             result.values.push(values);
                         }
                     }
                     if (order) {
-                        result.values.sort(function (a, b) {
+                        result.values.sort(function(a, b) {
                             for (let index = 0; index < order.length; index++) {
                                 const orderElement = order[index];
                                 let orderColumn;
@@ -1051,8 +1017,7 @@ class IndexSQL {
                                         }
                                         if (a[orderIndex] > b[orderIndex]) {
                                             orderResult = 1;
-                                        }
-                                        else {
+                                        } else {
                                             orderResult = -1;
                                         }
                                         break;
@@ -1067,8 +1032,7 @@ class IndexSQL {
                                         }
                                         if (a[orderIndex]) {
                                             orderResult = 1;
-                                        }
-                                        else {
+                                        } else {
                                             orderResult = -1;
                                         }
                                         break;
@@ -1086,7 +1050,7 @@ class IndexSQL {
                     }
                     return result;
                 },
-                where: function (where, table) {
+                where: function(where, table) {
                     function checkWord(word, columnList) {
                         if (word === "") {
                             return "";
@@ -1177,13 +1141,11 @@ class IndexSQL {
                                 continue;
                             }
                             currentWord = currentWord + character;
-                        }
-                        else {
+                        } else {
                             if (onString.separator === character) {
                                 result = result + onString.separator + onString.word + onString.separator;
                                 onString = undefined;
-                            }
-                            else {
+                            } else {
                                 onString.word = onString.word + character;
                             }
                         }
@@ -1193,10 +1155,12 @@ class IndexSQL {
                     return result;
                 }
             };
+
             function createDB(name) {
                 DBUtils.name = name;
                 DBUtils.load();
             }
+
             function messageHandler(e) {
                 if (e.data.drop) {
                     DBUtils.drop();
@@ -1218,10 +1182,11 @@ class IndexSQL {
         db.id = 0;
         db.callbacks = [];
         if (window.indexedDB) {
-            if (typeof (Worker) !== "undefined") {
+            if (typeof(Worker) !== "undefined") {
                 db.worker = new Worker(URL.createObjectURL(new Blob(["(" + db.server.toString().slice(0, -1) +
-                 "createDB('" + dbName + "');})()"], { type: 'text/javascript' })));
-                db.worker.onmessage = function (e) {
+                    "createDB('" + dbName + "');})()"
+                ], { type: 'text/javascript' })));
+                db.worker.onmessage = function(e) {
                     if (e.data.end) {
                         db.worker.terminate();
                         db.end = true;
@@ -1234,7 +1199,7 @@ class IndexSQL {
                     db.callbacks[e.data.id](e.data.response);
                     db.callbacks[e.data.id] = undefined;
                 };
-                db.query = function (query, callback) {
+                db.query = function(query, callback) {
                     if (db.end) {
                         console.warn("This database has been dropped already");
                         return;
@@ -1243,14 +1208,14 @@ class IndexSQL {
                     db.callbacks[db.id] = callback;
                     db.id++;
                 };
-                db.drop = function () {
+                db.drop = function() {
                     if (db.end) {
                         console.warn("This database has been dropped already");
                         return;
                     }
                     db.worker.postMessage({ drop: true });
                 };
-                db.backup = function (callback) {
+                db.backup = function(callback) {
                     if (db.end) {
                         console.warn("This database has been dropped already");
                         return;
@@ -1258,20 +1223,18 @@ class IndexSQL {
                     db.backupCallback = callback;
                     db.worker.postMessage({ backup: true });
                 };
-                db.restore = function (backup) {
+                db.restore = function(backup) {
                     if (db.end) {
                         console.warn("This database has been dropped already");
                         return;
                     }
                     db.worker.postMessage({ restore: JSON.stringify(backup) });
                 };
-            }
-            else {
+            } else {
                 console.warn("Browser does not support Web Workers");
                 return this;
             }
-        }
-        else {
+        } else {
             console.warn("Browser does not support indexDB");
             return this;
         }
