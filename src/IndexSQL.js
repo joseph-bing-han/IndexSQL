@@ -1196,7 +1196,12 @@ export default class IndexSQL {
                         db.backupCallback(JSON.parse(e.data.backup));
                         return;
                     }
-                    db.callbacks[e.data.id](e.data.response);
+                    if (!db?.callbacks) {
+                        db.callbacks = [];
+                    }
+                    if (db.callbacks[e.data.id]) {
+                        db.callbacks[e.data.id](e.data.response);
+                    }
                     db.callbacks[e.data.id] = undefined;
                 };
                 db.query = function(query, callback) {
