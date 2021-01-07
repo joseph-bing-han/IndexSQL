@@ -436,7 +436,7 @@ export default class IndexSQL {
                                                 }
                                             }
                                         }
-                                        let response = tables.insert(matches.tableName, table, insertValues.join().split(","), columns, key);
+                                        let response = tables.insert(matches.tableName, table, this.getValues(insertValues.join()), columns, key);
                                         if (response.error) {
                                             error = response;
                                             break;
