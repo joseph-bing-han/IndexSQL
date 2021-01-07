@@ -371,8 +371,7 @@ export default class IndexSQL {
                         return setMatches;
                     }
 
-                    function getValues(matches, table) {
-                        let values = this.getValues(matches.values);
+                    function getValues(values, table) {
                         let result = {};
                         for (let index = 0; index < values.length; index++) {
                             const element = values[index];
@@ -399,7 +398,7 @@ export default class IndexSQL {
                     if (!table) {
                         return { error: "This table doesn't exists" };
                     }
-                    let values = getValues(matches, table);
+                    let values = getValues(this.getValues(matches.set), table);
                     let columnsAffected = Object.keys(values);
                     if (values.error) {
                         return values;
