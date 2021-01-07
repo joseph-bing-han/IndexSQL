@@ -336,7 +336,7 @@ export default class IndexSQL {
                             }
                         }
                     }
-                    let values = matches.values.split(",");
+                    let values = this.getValues(matches.values);
                     for (let index = 0; index < values.length; index++) {
                         values[index] = values[index].trim();
                     }
@@ -369,7 +369,7 @@ export default class IndexSQL {
                     }
 
                     function getValues(matches, table) {
-                        let values = matches.set.split(",");
+                        let values = this.getValues(matches.values);
                         let result = {};
                         for (let index = 0; index < values.length; index++) {
                             const element = values[index];
@@ -775,7 +775,33 @@ export default class IndexSQL {
                     } else {
                         return { error: "Not supported operation" };
                     }
-                }
+                },
+                getValues: function (values) {
+                    const strAll = values.match(/['|"][^'"]*['|"]/ig);
+                    const splitAll = values.split(/['|"][^'"]*['|"]/i);
+                    let data = [];
+                    let i = 0;
+                    for (; i < splitAll.length; i++) {
+                        let val = splitAll[i];
+                        if (val.charAt(0) === ',') {
+                            val = val.substring(1);
+                        }
+                        if (val.charAt(val.length - 1) === ',') {
+                            val = val.substring(0, val.length - 1);
+                        }
+                        if (val !== '') {
+                            const values = val.split(',');
+                            data = data.concat(values);
+                        }
+                        if (strAll[i]) {
+                            data.push(strAll[i]);
+                        }
+                    }
+                    for (; i < strAll.length; i++) {
+                        data.push(strAll[i]);
+                    }
+                    return data;
+                },
             };
 
             function Table(variables) {
@@ -1196,7 +1222,7 @@ export default class IndexSQL {
                         db.backupCallback(JSON.parse(e.data.backup));
                         return;
                     }
-                    if (!db?.callbacks) {
+                    if (typeof db.callbacks == 'undefined') {
                         db.callbacks = [];
                     }
                     if (db.callbacks[e.data.id]) {
