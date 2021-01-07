@@ -118,10 +118,13 @@ export default class IndexSQL {
                     }
                 },
                 parseAll: function(querys) {
-                    querys = querys.split(";");
+                    querys = querys.split(";\n");
                     let response = [];
-                    for (let index = 0; index < querys.length - 1; index++) {
-                        const query = querys[index];
+                    for (let index = 0; index < querys.length; index++) {
+                        const query = querys[index].trim();
+                        if(query===''){
+                            continue;
+                        }
                         response[index] = this.parser(query);
                         if (response[index].result) {
                             if (response[index].order) {
@@ -793,12 +796,14 @@ export default class IndexSQL {
                             const values = val.split(',');
                             data = data.concat(values);
                         }
-                        if (strAll[i]) {
+                        if (strAll && strAll[i]) {
                             data.push(strAll[i]);
                         }
                     }
-                    for (; i < strAll.length; i++) {
-                        data.push(strAll[i]);
+                    if(strAll){
+                        for (; i < strAll.length; i++) {
+                            data.push(strAll[i]);
+                        }
                     }
                     return data;
                 },
